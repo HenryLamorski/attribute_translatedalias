@@ -12,6 +12,7 @@
  * @author      Christian Schiffler <c.schiffler@cyberspectrum.de>
  * @author      Stefan Heimes <stefan_heimes@hotmail.com>
  * @author      Andreas Isaak <info@andreas-isaak.de>
+ * @author		Henry Lamorski <henry.lamorski@mailbox.org>
  * @copyright   The MetaModels team.
  * @license     LGPL.
  * @filesource
@@ -40,6 +41,32 @@ class TranslatedAlias extends TranslatedReference
         return 'tl_metamodel_translatedtext';
     }
 
+	/**
+     * {@inheritdoc}
+     * see #985
+     */
+    public function set($strKey, $varValue)
+    {
+		if ($strKey == 'name') {
+
+			if (!is_array($varValue) && (substr($varValue, 0, 2) == 'a:')) {
+				$unSerialized = unserialize($varValue);
+			}
+       
+			foreach($unSerialized as $lang_key => $value) {
+				if (!$value || empty($value)) {
+					$unSerialized[$lang_key] = 'alias_' . $lang_key;
+				}
+			}
+
+			$varValue = serialize($unSerialized);
+		}
+
+		parent::set($strKey, $varValue);
+    }
+
+
+
     /**
      * {@inheritdoc}
      */
@@ -61,6 +88,7 @@ class TranslatedAlias extends TranslatedReference
      */
     public function getFieldDefinition($arrOverrides = array())
     {
+		file_put_contents("/var/www/contao.log",print_r("TranslatedAlias::getFieldDefinition() called\n",true),FILE_APPEND);
         $arrFieldDef = parent::getFieldDefinition($arrOverrides);
 
         $arrFieldDef['inputType'] = 'text';
@@ -83,6 +111,9 @@ class TranslatedAlias extends TranslatedReference
      */
     public function modelSaved($objItem)
     {
+
+		file_put_contents("/var/www/contao.log",print_r("TranslatedAlias::modelSaved() called\n",true),FILE_APPEND);
+
         $arrValue = $objItem->get($this->getColName());
         // Alias already defined and no update forced, get out!
         if ($arrValue && !empty($arrValue['value']) && (!$this->get('force_talias'))) {
